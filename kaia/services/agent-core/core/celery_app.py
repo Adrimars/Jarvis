@@ -46,5 +46,15 @@ app.conf.update(
             "schedule": crontab(hour=10, minute=0, day_of_week="tuesday,friday"),
             "args": ["clothing"],
         },
+        "weather-outfit-daily": {
+            "task": "tasks.run_module",
+            "schedule": crontab(hour=7, minute=25),
+            "args": ["weather_outfit"],
+        },
+        "news-daily": {
+            "task": "tasks.run_module",
+            "schedule": crontab(hour=8, minute=0),
+            "args": ["news"],
+        },
     },
 )
