@@ -118,8 +118,8 @@ async def _handle_photo(user_id: str, path: str) -> str:
     photos.append({"path": path, "embedding": embedding})
     save_profile(profile)
     count = len(photos)
-    embedded_note = "" if embedding else " (görsel analiz yapılamadı, stil bazlı arama kullanılacak)"
-    return f"Referans fotoğraf eklendi ({count}/5).{embedded_note} {'Cuma taraması için hazır!' if count >= 5 else 'Daha fazla gönderebilirsin.'}"
+    embedded_note = "" if embedding else " (visual analysis failed, style-based search will be used)"
+    return f"Reference photo added ({count}/5).{embedded_note} {'Ready for Friday scan!' if count >= 5 else 'You can send more.'}"
 
 
 async def message_loop():

@@ -32,7 +32,7 @@ class MorningBriefModule(BaseModule):
         news = r.get("latest:news") or ""
 
         name = profile.get("name", "")
-        greeting = f"Günaydın{', ' + name if name else ''}! ☀️"
+        greeting = f"Good morning{', ' + name if name else ''}! ☀️"
 
         parts = [greeting]
 
@@ -43,18 +43,16 @@ class MorningBriefModule(BaseModule):
             parts.append(news)
 
         if not weather and not news:
-            context = "Sabah özeti için hava durumu veya haber bilgisi yok."
+            context = "No weather or news data available for the morning brief."
         else:
             context = "\n\n".join(parts[1:])
 
         interests = profile.get("interests", [])
-        language = profile.get("language", "tr")
-        lang_hint = "Türkçe" if language == "tr" else "English"
 
         motivation = ask_llm(
-            f"Aşağıdaki sabah özeti bilgilerine dayanarak kullanıcıya {lang_hint} olarak "
-            f"kısa, motive edici bir sabah mesajı yaz (2 cümle). "
-            f"Kullanıcının ilgi alanları: {', '.join(interests) if interests else 'genel'}.\n\n"
+            f"Based on the following morning brief, write a short motivational message "
+            f"in English (2 sentences). "
+            f"User interests: {', '.join(interests) if interests else 'general'}.\n\n"
             f"{context}",
             temperature=0.7,
         )

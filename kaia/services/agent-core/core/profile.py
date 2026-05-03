@@ -19,10 +19,10 @@ PROFILE_TEMPLATE = {
     },
     "interests": [],
     "food": {
-        "favorites": [],           # e.g. ["menemen", "mercimek çorbası"]
-        "dislikes": [],            # e.g. ["karaciğer", "acı biber"]
-        "cuisines": [],            # e.g. ["türk", "italyan"]
-        "dietary": [],             # e.g. ["vejetaryen", "glutensiz"]
+        "favorites": [],           # e.g. ["pasta carbonara", "lentil soup"]
+        "dislikes": [],            # e.g. ["liver", "hot pepper"]
+        "cuisines": [],            # e.g. ["italian", "japanese"]
+        "dietary": [],             # e.g. ["vegetarian", "gluten-free"]
         "preference_scores": {},   # recipe_name → float 0-1, updated by feedback
     },
     "reading": {

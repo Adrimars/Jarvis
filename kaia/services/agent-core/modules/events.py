@@ -35,7 +35,7 @@ class EventsModule(BaseModule):
         if not profile:
             profile = load_profile()
 
-        categories = profile.get("events", {}).get("categories", ["tiyatro", "sinema", "konser"])
+        categories = profile.get("events", {}).get("categories", ["theater", "cinema", "concert"])
         min_score = profile.get("events", {}).get("min_interest_score", 0.75)
         location = profile.get("location", "Izmir").split(",")[0]
 
@@ -67,14 +67,14 @@ class EventsModule(BaseModule):
 
         if not raw_items:
             logger.warning("Events scraper returned no results")
-            return ModuleResult(success=False, message="Bu hafta etkinlik bilgisi alınamadı.")
+            return ModuleResult(success=False, message="Could not fetch event listings this week.")
 
         # Score each event with LLM against user interests
         scored = self._score_events(raw_items, categories, location, min_score)
         if not scored:
             return ModuleResult(
                 success=True,
-                message=f"Bu hafta {location} için ilgi çekici etkinlik bulunamadı.",
+                message=f"No interesting events found in {location} this week.",
             )
 
         # Cache items for feedback
@@ -101,9 +101,9 @@ class EventsModule(BaseModule):
             for i, item in enumerate(items[:20])
         )
         prompt = (
-            f"Kullanıcı {location}'da yaşıyor ve şu etkinlikleri seviyor: {', '.join(categories)}.\n"
-            f"Aşağıdaki etkinlikleri ilgi düzeyine göre 0.0–1.0 arasında puanla.\n"
-            f"Sadece JSON döndür: [{{\"index\": 1, \"score\": 0.9}}, ...]\n\n{listing}"
+            f"The user lives in {location} and enjoys: {', '.join(categories)}.\n"
+            f"Score each event below by interest level on a 0.0–1.0 scale.\n"
+            f"Return only JSON: [{{\"index\": 1, \"score\": 0.9}}, ...]\n\n{listing}"
         )
         try:
             raw = ask_llm(prompt, temperature=0.1)
@@ -123,13 +123,13 @@ class EventsModule(BaseModule):
         return []
 
     def _format_message(self, events: list, location: str) -> str:
-        lines = [f"🎭 Bu hafta {location}'da seçtiğim etkinlikler:"]
+        lines = [f"🎭 This week's picks in {location}:"]
         for i, ev in enumerate(events, 1):
             score_pct = int(ev.get("score", 0) * 100)
             title = ev.get("title", "")[:60]
             source = ev.get("source", "")
             link = ev.get("link", "")
-            line = f"{i}. {title} — {source} (%{score_pct} eşleşme)"
+            line = f"{i}. {title} — {source} ({score_pct}% match)"
             if link:
                 line += f"\n   {link}"
             lines.append(line)

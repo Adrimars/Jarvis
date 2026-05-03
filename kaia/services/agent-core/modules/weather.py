@@ -1,7 +1,7 @@
 # modules/weather.py
 # Runs every morning at 07:25. Fetches current weather from OpenWeatherMap,
-# then asks the LLM for a 2-sentence outfit suggestion based on conditions
-# and the user's clothing style. Result is cached in Redis for the morning brief.
+# then asks the LLM for a 2-sentence clothing suggestion based on conditions
+# and the user's style. Result is cached in Redis for the morning brief.
 
 import logging
 import os
@@ -36,7 +36,7 @@ class WeatherModule(BaseModule):
                 params={
                     "q": location,
                     "appid": API_KEY,
-                    "lang": "tr",
+                    "lang": "en",
                     "units": "metric",
                 },
                 timeout=10,
@@ -50,12 +50,12 @@ class WeatherModule(BaseModule):
             humid  = data["main"]["humidity"]
             wind   = data["wind"]["speed"]
 
-            weather_summary = f"{temp:.0f}°C (hissedilen {feels:.0f}°C), {desc}, nem %{humid}, rüzgar {wind:.1f} m/s"
+            weather_summary = f"{temp:.0f}°C (feels like {feels:.0f}°C), {desc}, humidity {humid}%, wind {wind:.1f} m/s"
 
             style = profile.get("clothing", {}).get("style", "casual")
             suggestion = ask_llm(
-                f"Hava durumu: {weather_summary}. Kullanıcının stili: {style}. "
-                f"2 cümlede ne giymeli?",
+                f"Weather: {weather_summary}. User's style: {style}. "
+                f"In 2 sentences, what should they wear today?",
                 temperature=0.6,
             )
 
@@ -69,7 +69,7 @@ class WeatherModule(BaseModule):
 
         except httpx.TimeoutException:
             logger.warning("OpenWeatherMap timeout")
-            return ModuleResult(success=False, message="Hava durumu alınamadı (timeout).")
+            return ModuleResult(success=False, message="Could not fetch weather (timeout).")
         except Exception as e:
             logger.error(f"Weather module error: {e}")
-            return ModuleResult(success=False, message="Hava durumu alınamadı.")
+            return ModuleResult(success=False, message="Could not fetch weather.")

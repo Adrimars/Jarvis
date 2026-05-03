@@ -2,7 +2,7 @@
 # On-demand module (disabled by default, enable with /module food on).
 # Handles multi-turn recipe conversations: extracts ingredients from chat,
 # suggests 3 recipes personalised to the user's favorites/dislikes/dietary needs,
-# and refines based on follow-up messages ("hafif olsun", "başka öner").
+# and refines based on follow-up messages ("make it light", "suggest another").
 # Every like/dislike nudges the per-recipe preference scores in the profile.
 
 import json
@@ -54,22 +54,22 @@ def handle_food_conversation(user_id: str, message: str) -> str:
             return _suggest_recipes(ingredients, [], food_prefs)
         else:
             set_state(user_id, {"step": "waiting_ingredients"})
-            return "Evde ne var? Malzemeleri söyle, sana tarif önereyim."
+            return "What do you have at home? Tell me the ingredients and I'll suggest a recipe."
 
     step = state.get("step")
 
     if step == "waiting_ingredients":
         ingredients = _extract_ingredients(message)
         if not ingredients:
-            return "Hangi malzemelerin var? (örn: domates, yumurta, peynir)"
+            return "What ingredients do you have? (e.g. tomatoes, eggs, cheese)"
         state = {"step": "suggest", "ingredients": ingredients, "modifiers": []}
         set_state(user_id, state)
         return _suggest_recipes(ingredients, [], food_prefs)
 
     if step == "suggest":
-        # User might be refining (e.g. "hafif olsun", "başka öner")
+        # User might be refining (e.g. "make it light", "suggest another")
         lower = message.lower()
-        if any(w in lower for w in ["başka", "farklı", "değiştir", "yok"]):
+        if any(w in lower for w in ["another", "different", "change", "no", "else", "other", "not that"]):
             modifiers = state.get("modifiers", [])
             return _suggest_recipes(state["ingredients"], modifiers, food_prefs, exclude=state.get("last_suggestions", []))
         else:
@@ -80,7 +80,7 @@ def handle_food_conversation(user_id: str, message: str) -> str:
             return _suggest_recipes(state["ingredients"], modifiers, food_prefs)
 
     clear_state(user_id)
-    return "Yeni bir şey deneyelim mi?"
+    return "Want to try something else?"
 
 
 def record_food_feedback(user_id: str, recipe_name: str, feedback: str):
@@ -102,9 +102,9 @@ def record_food_feedback(user_id: str, recipe_name: str, feedback: str):
 def _extract_ingredients(message: str) -> list[str]:
     """Use LLM to pull ingredient list from natural-language message."""
     result = ask_llm(
-        f"Bu mesajdan malzeme listesi çıkar. Sadece JSON dizisi döndür, başka hiçbir şey yazma.\n"
-        f"Örnek: [\"domates\", \"yumurta\", \"peynir\"]\n"
-        f"Eğer malzeme yoksa boş dizi döndür: []\n\nMesaj: {message}",
+        f"Extract a list of ingredients from this message. Return only a JSON array, nothing else.\n"
+        f"Example: [\"tomatoes\", \"eggs\", \"cheese\"]\n"
+        f"If there are no ingredients, return an empty array: []\n\nMessage: {message}",
         temperature=0.1,
     )
     try:
@@ -131,28 +131,28 @@ def _suggest_recipes(ingredients: list, modifiers: list, food_prefs: dict, exclu
 
     prefs_block = ""
     if favorites:
-        prefs_block += f"Sevdikleri: {', '.join(favorites[:8])}. "
+        prefs_block += f"Favorites: {', '.join(favorites[:8])}. "
     if dislikes:
-        prefs_block += f"Sevmedikleri: {', '.join(dislikes[:8])}. "
+        prefs_block += f"Dislikes: {', '.join(dislikes[:8])}. "
     if cuisines:
-        prefs_block += f"Tercih ettiği mutfaklar: {', '.join(cuisines)}. "
+        prefs_block += f"Preferred cuisines: {', '.join(cuisines)}. "
     if dietary:
-        prefs_block += f"Beslenme kısıtları: {', '.join(dietary)}. "
+        prefs_block += f"Dietary restrictions: {', '.join(dietary)}. "
     if liked_str:
-        prefs_block += f"En çok beğendikleri: {liked_str}. "
+        prefs_block += f"Top rated recipes: {liked_str}. "
 
-    modifier_str = f"Ekstra istek: {', '.join(modifiers)}. " if modifiers else ""
-    exclude_str = f"Bunları önerme: {', '.join(exclude)}. " if exclude else ""
+    modifier_str = f"Extra requests: {', '.join(modifiers)}. " if modifiers else ""
+    exclude_str = f"Do not suggest these: {', '.join(exclude)}. " if exclude else ""
 
     prompt = (
-        f"Malzemeler: {', '.join(ingredients)}.\n"
+        f"Ingredients: {', '.join(ingredients)}.\n"
         f"{prefs_block}"
         f"{modifier_str}"
         f"{exclude_str}"
-        f"Bu malzemeleri kullanarak yapılabilecek 3 tarif öner. "
-        f"Her tarif için: isim, 1 cümle açıklama, süre (dakika). "
-        f"Kullanıcının tercihlerine ve kısıtlarına dikkat et. "
-        f"Türkçe yanıtla. Kısa ve net ol."
+        f"Suggest 3 recipes that can be made with these ingredients. "
+        f"For each: name, 1-sentence description, time (minutes). "
+        f"Respect the user's preferences and restrictions. "
+        f"Reply in English. Be concise."
     )
 
     return ask_llm(prompt, temperature=0.7)
@@ -169,4 +169,4 @@ class FoodModule(BaseModule):
         return profile.get("modules", {}).get("food", False)
 
     def run(self, profile: dict) -> ModuleResult:
-        return ModuleResult(success=True, message="Yemek modülü konuşma üzerinden çalışır.")
+        return ModuleResult(success=True, message="Food module works through conversation.")

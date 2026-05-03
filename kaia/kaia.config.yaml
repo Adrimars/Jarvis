@@ -3,10 +3,10 @@
 # ║  Bu dosyayı düzenle, sonra: make restart             ║
 # ╚══════════════════════════════════════════════════════╝
 
-# ── Karakter & Dil ─────────────────────────────────────
+# ── Karakter & Dil ──────────────────────────────S───────
 character:
   name: "KAIA"                  # Asistanın adı
-  language: "tr"                # tr = Türkçe, en = English
+  language: "en"                # tr = Türkçe, en = English
   tone: "casual"                # casual | serious | friendly | professional
   personality: |
     Samimi, sıcak, biraz esprili. Gerektiğinde ciddi olabilir.
@@ -36,7 +36,7 @@ modules:
   events:            true
   price_tracker:     true
   clothing:          true
-  food:              false    # Açmak için: true yap, make restart
+  food:              true    # Açmak için: true yap, make restart
 
 # ── Sabah Özeti ────────────────────────────────────────
 morning_brief:

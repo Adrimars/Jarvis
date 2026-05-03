@@ -28,12 +28,12 @@ class NewsModule(BaseModule):
             profile = load_profile()
 
         interests = profile.get("interests", [])
-        language = profile.get("language", "tr")
-        country = "tr" if language == "tr" else "us"
+        language = profile.get("language", "en")
+        country = profile.get("country", "us")
 
         if not NEWS_API_KEY:
             logger.warning("NEWS_API_KEY not set — skipping news module")
-            return ModuleResult(success=False, message="Haber anahtarı ayarlanmamış.")
+            return ModuleResult(success=False, message="NEWS_API_KEY is not set.")
 
         try:
             params = {
@@ -49,7 +49,7 @@ class NewsModule(BaseModule):
             articles = resp.json().get("articles", [])
 
             if not articles:
-                return ModuleResult(success=True, message="Bugün öne çıkan haber bulunamadı.")
+                return ModuleResult(success=True, message="No top headlines found for today.")
 
             headlines = "\n".join(
                 f"- {a['title']} ({a.get('source', {}).get('name', '')})"
@@ -57,14 +57,13 @@ class NewsModule(BaseModule):
                 if a.get("title")
             )
 
-            lang_hint = "Türkçe" if language == "tr" else "English"
             summary = ask_llm(
-                f"Bu haber başlıklarını {lang_hint} olarak 3 cümlede özetle, "
-                f"en önemli 2-3 konuya odaklan:\n{headlines}",
+                f"Summarise these headlines in 3 sentences in English, "
+                f"focusing on the 2-3 most important topics:\n{headlines}",
                 temperature=0.5,
             )
 
-            message = f"📰 Günün haberleri:\n{summary}"
+            message = f"📰 Today's news:\n{summary}"
 
             import redis, json
             r = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
@@ -74,7 +73,7 @@ class NewsModule(BaseModule):
 
         except httpx.TimeoutException:
             logger.warning("NewsAPI timeout")
-            return ModuleResult(success=False, message="Haberler alınamadı (timeout).")
+            return ModuleResult(success=False, message="Could not fetch news (timeout).")
         except Exception as e:
             logger.error(f"News module error: {e}")
-            return ModuleResult(success=False, message="Haberler alınamadı.")
+            return ModuleResult(success=False, message="Could not fetch news.")

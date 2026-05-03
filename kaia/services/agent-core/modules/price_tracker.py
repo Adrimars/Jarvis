@@ -120,14 +120,14 @@ class PriceTrackerModule(BaseModule):
         return None
 
     def _format_message(self, hits: list) -> str:
-        lines = ["💰 Fiyat alarmı!"]
+        lines = ["💰 Price alert!"]
         for h in hits:
             name = h["name"]
             old = h["old"]
             new = h["new"]
             link = h["link"]
             if old > 0:
-                lines.append(f"📉 {name}: {old:.0f} TL → {new:.0f} TL (-{h['drop']:.0f} TL)\n   {link}")
+                lines.append(f"📉 {name}: {old:.0f} → {new:.0f} (-{h['drop']:.0f})\n   {link}")
             else:
-                lines.append(f"✅ {name}: {new:.0f} TL (hedef fiyata ulaştı!)\n   {link}")
+                lines.append(f"✅ {name}: {new:.0f} (target price reached!)\n   {link}")
         return "\n".join(lines)

@@ -33,11 +33,8 @@ async def handle_message(user_id: str, message: str) -> str:
 
     if intent == "tone_change":
         new_tone = extract_tone_from_message(message)
-        tone.set(new_tone)
-        response = "Anladım." if new_tone == "serious" else "Tamam :)"
-        memory.add("user", message)
-        memory.add("assistant", response)
-        return response
+        if new_tone != tone.get():
+            tone.set(new_tone)
 
     if intent == "food":
         from modules.food import handle_food_conversation

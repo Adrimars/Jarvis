@@ -63,7 +63,7 @@ class ClothingModule(BaseModule):
         # Wait for results
         items = self._wait_for_results(r, job_id)
         if not items:
-            return ModuleResult(success=False, message="Kıyafet taraması sonuç döndürmedi.")
+            return ModuleResult(success=False, message="Clothing scan returned no results.")
 
         # Filter by budget
         items = [i for i in items if budget_min <= i.get("price", 0) <= budget_max]
@@ -76,7 +76,7 @@ class ClothingModule(BaseModule):
 
         scored = sorted(scored, key=lambda x: x["score"], reverse=True)[:8]
         if not scored:
-            return ModuleResult(success=False, message="Bütçe ve stile uygun ürün bulunamadı.")
+            return ModuleResult(success=False, message="No items found matching your budget and style.")
 
         # Cache items for feedback later
         for item in scored:
@@ -145,9 +145,9 @@ class ClothingModule(BaseModule):
             for i, it in enumerate(sample)
         )
         prompt = (
-            f"Kullanıcının stili: {style}. Bütçe: {budget_min:.0f}–{budget_max:.0f} TL.\n"
-            f"Aşağıdaki kıyafetleri stiline uygunluğuna göre 0.0–1.0 arasında puanla.\n"
-            f"Sadece JSON dizisi döndür: [{{\"index\": 1, \"score\": 0.85}}, ...]\n\n"
+            f"User's style: {style}. Budget: {budget_min:.0f}–{budget_max:.0f}.\n"
+            f"Score each item below for style match on a 0.0–1.0 scale.\n"
+            f"Return only a JSON array: [{{\"index\": 1, \"score\": 0.85}}, ...]\n\n"
             f"{listing}"
         )
         try:
@@ -168,14 +168,14 @@ class ClothingModule(BaseModule):
         return [{**it, "score": 0.5} for it in sample]
 
     def _format_message(self, items: list) -> str:
-        lines = ["👕 Kıyafet önerileri:"]
+        lines = ["👕 Clothing suggestions:"]
         for i, item in enumerate(items, 1):
             score_pct = int(item.get("score", 0) * 100)
             price = item.get("price", 0)
             title = item.get("title", "")[:50]
             source = item.get("source", "")
             link = item.get("link", "")
-            line = f"{i}. {title} — {price:.0f} TL, {source} (%{score_pct} eşleşme)"
+            line = f"{i}. {title} — {price:.0f}, {source} ({score_pct}% match)"
             if link:
                 line += f"\n   {link}"
             lines.append(line)
