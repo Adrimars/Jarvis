@@ -10,6 +10,22 @@ logging.basicConfig(
 from core.logger import setup_file_logging
 setup_file_logging("celery-worker")
 
+from core.config import schedule as cfg_schedule, timezone as cfg_timezone
+
+
+def _parse(time_str: str):
+    """Parse 'HH:MM' or 'day HH:MM' into a crontab."""
+    parts = time_str.strip().split()
+    if len(parts) == 2:
+        day, hhmm = parts
+    else:
+        day, hhmm = None, parts[0]
+    h, m = map(int, hhmm.split(":"))
+    if day:
+        return crontab(hour=h, minute=m, day_of_week=day)
+    return crontab(hour=h, minute=m)
+
+
 app = Celery(
     "kaia",
     broker=os.getenv("REDIS_URL", "redis://redis:6379/0"),
@@ -21,7 +37,7 @@ app.conf.update(
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],
-    timezone="Europe/Istanbul",
+    timezone=cfg_timezone(),
     enable_utc=True,
     beat_schedule={
         "hello-kaia-every-minute": {
@@ -29,48 +45,43 @@ app.conf.update(
             "schedule": 60.0,
             "args": ["hello_kaia"],
         },
-        "price-check-daily": {
+        "weather-outfit-daily": {
             "task": "tasks.run_module",
-            "schedule": crontab(hour=12, minute=0),
-            "args": ["price_tracker"],
+            "schedule": _parse(cfg_schedule("weather_outfit") or "07:25"),
+            "args": ["weather_outfit"],
         },
         "morning-briefing-daily": {
             "task": "tasks.run_module",
-            "schedule": crontab(hour=7, minute=30),
+            "schedule": _parse(cfg_schedule("morning_briefing") or "07:30"),
             "args": ["morning_briefing"],
-        },
-        "evening-reading-daily": {
-            "task": "tasks.run_module",
-            "schedule": crontab(hour=21, minute=0),
-            "args": ["evening_reading"],
-        },
-        "weekly-events-monday": {
-            "task": "tasks.run_module",
-            "schedule": crontab(hour=9, minute=0, day_of_week="monday"),
-            "args": ["events"],
-        },
-        "clothing-scan-tue-fri": {
-            "task": "tasks.run_module",
-            "schedule": crontab(hour=10, minute=0, day_of_week="tuesday,friday"),
-            "args": ["clothing"],
-        },
-        "weather-outfit-daily": {
-            "task": "tasks.run_module",
-            "schedule": crontab(hour=7, minute=25),
-            "args": ["weather_outfit"],
         },
         "news-daily": {
             "task": "tasks.run_module",
-            "schedule": crontab(hour=8, minute=0),
+            "schedule": _parse(cfg_schedule("news") or "08:00"),
             "args": ["news"],
+        },
+        "weekly-events": {
+            "task": "tasks.run_module",
+            "schedule": _parse(cfg_schedule("events") or "monday 08:30"),
+            "args": ["events"],
+        },
+        "price-check-daily": {
+            "task": "tasks.run_module",
+            "schedule": _parse(cfg_schedule("price_tracker") or "12:00"),
+            "args": ["price_tracker"],
+        },
+        "clothing-scan": {
+            "task": "tasks.run_module",
+            "schedule": _parse(cfg_schedule("clothing") or "tuesday,friday 10:00"),
+            "args": ["clothing"],
         },
         "nightly-backup": {
             "task": "tasks.run_backup",
-            "schedule": crontab(hour=3, minute=0),
+            "schedule": _parse(cfg_schedule("nightly_backup") or "03:00"),
         },
         "weekly-normalize": {
             "task": "tasks.run_normalize",
-            "schedule": crontab(hour=4, minute=0, day_of_week="sunday"),
+            "schedule": _parse(cfg_schedule("weekly_normalize") or "sunday 04:00"),
         },
     },
 )

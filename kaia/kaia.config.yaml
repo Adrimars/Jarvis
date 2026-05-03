@@ -1,0 +1,62 @@
+# ╔══════════════════════════════════════════════════════╗
+# ║           KAIA — Kişiselleştirme Ayarları            ║
+# ║  Bu dosyayı düzenle, sonra: make restart             ║
+# ╚══════════════════════════════════════════════════════╝
+
+# ── Karakter & Dil ─────────────────────────────────────
+character:
+  name: "KAIA"                  # Asistanın adı
+  language: "tr"                # tr = Türkçe, en = English
+  tone: "casual"                # casual | serious | friendly | professional
+  personality: |
+    Samimi, sıcak, biraz esprili. Gerektiğinde ciddi olabilir.
+    Asla robot gibi davranmaz. Gereksiz liste yapmaz.
+    Kullanıcının enerjisine uyum sağlar.
+
+# ── Modül Saatleri ─────────────────────────────────────
+# Saat formatı: "HH:MM"  |  Gün: monday tuesday wednesday thursday friday saturday sunday
+schedules:
+  weather_outfit:     "07:25"
+  morning_briefing:   "07:30"
+  news:               "08:00"
+  events:             "monday 08:30"
+  price_tracker:      "12:00"
+  clothing:           "tuesday,friday 10:00"
+  nightly_backup:     "03:00"
+  weekly_normalize:   "sunday 04:00"
+
+# ── Zaman Dilimi ───────────────────────────────────────
+timezone: "Europe/Istanbul"
+
+# ── Modüller (true = açık, false = kapalı) ─────────────
+modules:
+  weather_outfit:    true
+  morning_briefing:  true
+  news:              true
+  events:            true
+  price_tracker:     true
+  clothing:          true
+  food:              false    # Açmak için: true yap, make restart
+
+# ── Sabah Özeti ────────────────────────────────────────
+morning_brief:
+  include_weather:   true
+  include_news:      true
+  motivational_line: true
+
+# ── Haber ──────────────────────────────────────────────
+news:
+  max_headlines: 7
+  summary_sentences: 3
+
+# ── Kıyafet Tarayıcı ───────────────────────────────────
+clothing:
+  visual_threshold: 0.70      # CLIP benzerlik eşiği (0.0–1.0)
+  max_results: 8
+
+# ── Etkinlik ───────────────────────────────────────────
+events:
+  min_score: 0.75             # LLM alaka eşiği (0.0–1.0)
+  sources:
+    - "https://www.biletix.com/bolge/IZMIR/"
+    - "https://www.passo.com.tr/tr/etkinlik/izmir"

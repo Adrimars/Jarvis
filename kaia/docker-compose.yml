@@ -25,6 +25,7 @@ services:
     depends_on: [redis, ollama]
     volumes:
       - kaia-data:/data/kaia
+      - ./kaia.config.yaml:/data/kaia/kaia.config.yaml:ro
 
   telegram-bot:
     build: ./services/telegram-bot
@@ -51,6 +52,7 @@ services:
     depends_on: [redis, ollama]
     volumes:
       - kaia-data:/data/kaia
+      - ./kaia.config.yaml:/data/kaia/kaia.config.yaml:ro
 
   celery-beat:
     build: ./services/agent-core
@@ -61,6 +63,7 @@ services:
     depends_on: [redis]
     volumes:
       - kaia-data:/data/kaia
+      - ./kaia.config.yaml:/data/kaia/kaia.config.yaml:ro
 
 volumes:
   redis-data:
