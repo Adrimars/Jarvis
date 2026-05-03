@@ -12,6 +12,13 @@ PROFILE_TEMPLATE = {
         "reference_photos": [],
     },
     "interests": [],
+    "food": {
+        "favorites": [],           # e.g. ["menemen", "mercimek çorbası"]
+        "dislikes": [],            # e.g. ["karaciğer", "acı biber"]
+        "cuisines": [],            # e.g. ["türk", "italyan"]
+        "dietary": [],             # e.g. ["vejetaryen", "glutensiz"]
+        "preference_scores": {},   # recipe_name → float 0-1, updated by feedback
+    },
     "reading": {
         "morning": "short_news",
         "evening": "deep_article",

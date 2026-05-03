@@ -1,3 +1,6 @@
+import os
+import redis as redis_lib
+
 from llm.client import ask_llm
 from llm.prompts import KAIA_SYSTEM
 from memory.conversation import ConversationMemory
@@ -6,10 +9,20 @@ from core.tone_manager import ToneManager, extract_tone_from_message
 
 MODULE_INTENTS = {"clothing", "food", "news", "article", "events", "price"}
 
+_r = redis_lib.Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+
 
 async def handle_message(user_id: str, message: str) -> str:
     memory = ConversationMemory(user_id)
     tone = ToneManager(user_id)
+
+    # If user is mid-food-conversation, stay in that flow
+    if _r.exists(f"food_state:{user_id}"):
+        from modules.food import handle_food_conversation
+        response = handle_food_conversation(user_id, message)
+        memory.add("user", message)
+        memory.add("assistant", response)
+        return response
 
     intent = detect_intent(message)
 
@@ -17,6 +30,13 @@ async def handle_message(user_id: str, message: str) -> str:
         new_tone = extract_tone_from_message(message)
         tone.set(new_tone)
         response = "Anladım." if new_tone == "serious" else "Tamam :)"
+        memory.add("user", message)
+        memory.add("assistant", response)
+        return response
+
+    if intent == "food":
+        from modules.food import handle_food_conversation
+        response = handle_food_conversation(user_id, message)
         memory.add("user", message)
         memory.add("assistant", response)
         return response
