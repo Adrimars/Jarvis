@@ -114,9 +114,10 @@ KAIA is a personal AI assistant that runs silently in the background, gets to kn
     └─────────────────────────────────────────────────────────────┘
                                 │
                          ┌──────▼──────┐
+                         │  Interface  │
                          │  Telegram   │
-                         │  (single    │
-                         │  interface) │
+                         │  (WhatsApp  │
+                         │   — future) │
                          └─────────────┘
 
 ### 3.2 Component Details
@@ -443,13 +444,22 @@ Template content (to be filled in by the user):
 At initial setup, reference photos are converted to embeddings using the CLIP model and saved to the profile.
 
 During regular scans (Tuesday & Friday):
-- Playwright scrapes known sites + newly discovered sites
+- Playwright scrapes all active sites (built-in + user-registered)
 - Each product image is embedded with CLIP
 - Cosine similarity is computed against reference embeddings
 - Budget filter applied + top 8 products selected
 - Sent to Telegram
 
-Site discovery: 1–2 new sites are discovered on each search. Sites that yield good results are saved to the profile. Sites are prioritized as the user likes more results.
+**Universal scraper — any shopping site is supported:**
+- Built-in scrapers: Trendyol, Zara, H&M, Defacto, Koton, Bershka
+- User can add any site via Telegram: `/addsite https://www.no362.com`
+- For unknown sites, GenericScraper auto-detects product cards using:
+  1. JSON-LD structured data
+  2. Open Graph meta tags
+  3. Common CSS heuristics
+  4. LLM-based extraction (last resort)
+- Site registry stored in Redis — persists across restarts
+- Sites are scored: good results → score up, bad results → score down
 
 Learning:
 - Like → embedding added to liked pool, site score +0.05
@@ -595,6 +605,60 @@ Profile and Redis data are unaffected. Logs are preserved.
 - Recommendations after 4 weeks are noticeably better than in the first week
 
 
-## 14. After MVP 
-- After all the success criteria's reached the additions that we can:
--> Song Selecter from spotify or youtube for users mood 
+## 14. Deployment Modes
+
+### 14.1 Local Mode (Default — Weeks 1–10)
+Docker runs on the user's Windows machine. Auto-starts via Task Scheduler at login.
+Catch-Up Service handles tasks missed while the computer was off.
+
+### 14.2 Cloud Mode (Post-MVP)
+Move Docker Compose stack to a VPS (e.g. Hetzner, DigitalOcean, Contabo).
+KAIA runs 24/7 — no dependency on the local computer being on.
+Migration steps:
+  - `docker compose push` to registry
+  - Deploy compose file to server
+  - Point Telegram webhook to server IP
+  - Move Redis volume + profile to server
+
+No code changes required — the architecture is already cloud-ready.
+
+---
+
+## 15. Interface Extensions (Post-MVP)
+
+### 15.1 WhatsApp Support
+WhatsApp via Meta Cloud API (free tier, requires Meta Business account).
+The Interface Layer is abstracted — adding WhatsApp means a new service
+(whatsapp-bot) that speaks the same Redis queue protocol as the Telegram bot.
+No changes to Agent Core, modules, or any other layer.
+
+    whatsapp-bot service:
+    - Receives webhooks from Meta
+    - Validates sender phone number (same security model as chat ID filter)
+    - Forwards to Agent Core via Redis queue
+    - Formats and sends responses back via Meta API
+
+### 15.2 Song Selector (Post-MVP)
+Spotify or YouTube — selects music based on user mood detected from conversation.
+
+---
+
+## 16. Modularity Contract
+
+Adding a new module always follows the same pattern:
+1. Create `services/agent-core/modules/new_module.py`
+2. Implement `BaseModule` (name, schedule, catchup, run())
+3. `make restart` — auto-discovered, no other changes needed
+
+Adding a new shopping site:
+- Telegram: `/addsite https://www.example.com`
+- Or add a specialized scraper class in `services/scraper/scraper/`
+- Register in `registry.py` KNOWN_SITES if a specialized scraper exists
+
+---
+
+## 17. After MVP
+- Song selector from Spotify or YouTube based on user mood
+- WhatsApp interface (see §15.1)
+- Cloud deployment (see §14.2)
+- Voice interface (Whisper STT → TTS response)

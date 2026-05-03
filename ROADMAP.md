@@ -427,82 +427,62 @@ This is what turns KAIA into a real assistant.
 
 ---
 
-## Week 4 — Web Scraping with Playwright
+## Week 4 — Universal Web Scraping with Playwright
 
-**Goal:** Be able to browse any website safely and extract data.
+**Goal:** Scrape ANY shopping website safely. Known sites get specialized scrapers.
+Unknown sites are handled automatically by the GenericScraper.
+New sites can be added via Telegram at any time.
 
 ### What to Learn This Week
 - What is a headless browser? Playwright vs Selenium
-- How to write CSS Selectors and XPath
+- CSS Selectors, XPath, JSON-LD structured data
 - robots.txt and ethical scraping
 - Rate limiting: how to avoid getting banned
-- Why JS-heavy sites need a dedicated scraper
-
-### Recommended Resources
-- Playwright Python docs: playwright.dev/python
+- Site registry pattern: map domains → scrapers
 
 ### Tasks
 
 **4.1 — Base Scraper**
+`scraper/base.py` — rate limiting, robots.txt check, user-agent rotation
 
-    # scraper/base.py
-    import asyncio, random
-    from playwright.async_api import async_playwright
-    
-    class BaseScraper:
-        def __init__(self, base_url, rate_limit_rpm=10):
-            self.base_url = base_url
-            self.delay_min = 60 / rate_limit_rpm
-            self.delay_max = self.delay_min * 2
-    
-        async def _wait(self):
-            await asyncio.sleep(random.uniform(self.delay_min, self.delay_max))
-    
-        async def _check_robots(self, url) -> bool:
-            # Fetch robots.txt, check if scraping is allowed
-            pass
-    
-        async def scrape(self, url) -> dict:
-            raise NotImplementedError
+**4.2 — Specialized scrapers (known Turkish/global sites)**
+- `scraper/trendyol.py`
+- `scraper/zara.py`
+- `scraper/hm.py`
+- `scraper/defacto.py`
+- `scraper/koton.py`
+- `scraper/bershka.py`
 
-**4.2 — Trendyol Scraper**
+**4.3 — GenericScraper (`scraper/generic.py`)**
+Works on ANY e-commerce URL. Strategy in order:
+1. JSON-LD structured data (`<script type="application/ld+json">`)
+2. Open Graph meta tags
+3. Common CSS selector heuristics (tries 10+ patterns)
+4. LLM-based extraction (last resort — gives page text to Mistral)
 
-    # scraper/trendyol.py
-    
-    class TrendyolScraper(BaseScraper):
-        def __init__(self):
-            super().__init__("https://trendyol.com", rate_limit_rpm=8)
-    
-        async def search(self, query, max_items=20):
-            async with async_playwright() as p:
-                browser = await p.chromium.launch(headless=True)
-                page = await browser.new_page()
-                await page.goto(f"{self.base_url}/sr?q={query}")
-                await page.wait_for_selector(".product-card")
-    
-                items = []
-                for card in (await page.query_selector_all(".product-card"))[:max_items]:
-                    await self._wait()
-                    items.append({
-                        "title":     await card.inner_text(),  # real selectors will differ
-                        "price":     ...,
-                        "link":      ...,
-                        "image_url": ...
-                    })
-    
-                await browser.close()
-                return items
+**4.4 — Site Registry (`scraper/registry.py`)**
 
-**4.3 — Write Zara + H&M scrapers (same pattern)**
+    # Add any site via Telegram:
+    /addsite https://www.no362.com
+    /addsite https://www.lcw.com
+    
+    # Registry maps domain → scraper, tracks performance score
+    # Stored in Redis — survives restarts
 
-**4.4 — Site discovery scraper**
-New site discovery via Google Shopping — scrape search engine results, detect new domains.
+**4.5 — `/addsite` Telegram command (implemented in Week 6)**
+User sends URL → GenericScraper is tested against it → if ≥3 products found,
+site is registered → included in all future clothing scans.
 
 ### Week 4 End Test
 
-    results = asyncio.run(TrendyolScraper().search("oversize tshirt", 10))
-    print(f"{len(results)} products — first: {results[0]['title']}")
-    # → Delays between requests should be visible in the log
+    # Known site (specialized scraper)
+    results = asyncio.run(TrendyolScraper().search("oversize tshirt", 5))
+    print(f"Trendyol: {len(results)} products")
+    
+    # Unknown site (generic scraper)
+    scraper = GenericScraper("https://www.no362.com")
+    results = asyncio.run(scraper.search("tshirt", 5))
+    print(f"no362: {len(results)} products")
 
 ---
 
@@ -1189,12 +1169,40 @@ Linux:
     Risk                             | Mitigation
     ---------------------------------|------------------------------------------
     Trendyol bot detection           | User-agent rotation + slow requests
+    Generic scraper misses products  | JSON-LD → CSS heuristics → LLM fallback
     Mistral slow response            | Q4 quant, timeout=60, fallback message
     RAM overflow                     | Celery concurrency=2, lazy model load
     Event site structure changes     | Add fallback parser to each scraper
     Telegram rate limit              | Queue at 1 message/sec
     LLM intent detection error       | Fallback: ask "What did you mean?"
     Catch-up stacks too many tasks   | NO_CATCHUP list + 6-hour threshold
+
+---
+
+## Post-MVP Roadmap
+
+### Phase 2 — Cloud Deployment
+Move the entire stack to a VPS (Hetzner/DigitalOcean/Contabo recommended).
+No code changes — Docker Compose is already cloud-ready.
+KAIA runs 24/7, no dependency on local computer.
+
+    Steps (when ready):
+    1. Rent a VPS (2 vCPU, 8 GB RAM — ~€5–10/month)
+    2. Copy docker-compose.yml + .env to server
+    3. docker compose up -d
+    4. (Optional) Set up Nginx reverse proxy for webhooks
+
+### Phase 3 — WhatsApp Interface
+Add a `whatsapp-bot` service that mirrors the Telegram bot.
+Uses Meta Cloud API (free tier, requires Meta Business account).
+Zero changes to Agent Core, modules, or any other layer.
+
+    whatsapp-bot service talks the same Redis queue protocol.
+    Security: phone number whitelist (same model as chat ID filter).
+
+### Phase 4 — Voice Interface
+Whisper (STT) → Mistral → TTS response.
+Send a voice message to KAIA, get a voice reply.
 
 ---
 
@@ -1209,12 +1217,14 @@ Linux:
               ↓
     07:30  → Morning briefing
     21:00  → Evening reading
-    Tue/Fri → Clothing recommendations
+    Tue/Fri → Clothing recommendations (any site you add)
     Mon    → Izmir events
     12:00  → Price check (runs at startup if missed)
     14:00  → Passive discovery (runs at startup if missed)
     Live   → Price drops, important events, KAIA's own discoveries
               ↓
-    You can write on Telegram at any time.
+    You can write on Telegram (or WhatsApp) at any time.
     KAIA responds with memory, knowing your style, knowing you.
     Every week it knows you a little better.
+    
+    When you're ready: one command moves it all to the cloud.
