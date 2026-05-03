@@ -9,6 +9,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     Update,
+    constants,
 )
 from telegram.ext import (
     Application,
@@ -41,11 +42,11 @@ async def send_to_agent(user_id: str, text: str) -> str:
 
     response_key = f"response:{request_id}"
     result = await asyncio.get_event_loop().run_in_executor(
-        None, lambda: r.blpop(response_key, timeout=90)
+        None, lambda: r.blpop(response_key, timeout=180)
     )
     if result:
         return json.loads(result[1])["text"]
-    return "I didn't get a response in time — try again."
+    return "⏳ No response yet — Mistral might be busy. Try again in a moment."
 
 
 async def ask_approval(context: ContextTypes.DEFAULT_TYPE, description: str, action_id: str):
@@ -66,8 +67,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
     user_id = str(update.effective_user.id)
+    await context.bot.send_chat_action(update.effective_chat.id, constants.ChatAction.TYPING)
     response = await send_to_agent(user_id, update.message.text)
-    await update.message.reply_text(response)
+    if response:
+        await update.message.reply_text(response)
 
 
 async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -153,6 +156,7 @@ async def cmd_module(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_allowed(update):
         return
+    await context.bot.send_chat_action(update.effective_chat.id, constants.ChatAction.TYPING)
     user_id = str(update.effective_user.id)
     response = await send_to_agent(user_id, "__start__")
     await update.message.reply_text(response)
@@ -160,27 +164,36 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ─── Proactive message poller ───────────────────────────────────────────────
 
-async def proactive_poller(app: Application):
-    """Polls Redis for outbound messages from modules and forwards them to Telegram."""
+async def proactive_poller(bot):
+    """Background task — polls Redis for module-generated messages and sends them."""
+    logger.info("Proactive poller started")
+    loop = asyncio.get_event_loop()
     while True:
-        result = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: r.blpop("queue:telegram:outbox", timeout=5)
-        )
-        if result:
-            try:
+        try:
+            result = await loop.run_in_executor(
+                None, lambda: r.blpop("queue:telegram:outbox", timeout=5)
+            )
+            if result:
                 msg = json.loads(result[1])
                 text = msg.get("text", "")
+                if not text:
+                    continue
                 buttons = msg.get("buttons", [])
                 markup = None
                 if buttons:
                     keyboard = [[InlineKeyboardButton(b["label"], callback_data=b["data"]) for b in row] for row in buttons]
                     markup = InlineKeyboardMarkup(keyboard)
-                await app.bot.send_message(CHAT_ID, text, reply_markup=markup)
-            except Exception as e:
-                logger.error(f"Proactive message error: {e}")
+                await bot.send_message(CHAT_ID, text, reply_markup=markup)
+        except Exception as e:
+            logger.error(f"Proactive poller error: {e}")
+            await asyncio.sleep(5)
 
 
 # ─── Entry point ────────────────────────────────────────────────────────────
+
+async def post_init(app: Application):
+    asyncio.create_task(proactive_poller(app.bot))
+
 
 def main():
     logging.basicConfig(
@@ -188,7 +201,12 @@ def main():
         format="%(asctime)s [%(levelname)s] [telegram-bot] %(message)s",
     )
 
-    app = Application.builder().token(TOKEN).build()
+    app = (
+        Application.builder()
+        .token(TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
     app.add_handler(CommandHandler("start",     cmd_start))
     app.add_handler(CommandHandler("addsite",   cmd_addsite))
@@ -198,13 +216,6 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO,    handle_photo))
     app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     app.add_handler(CallbackQueryHandler(handle_callback))
-
-    # Run proactive poller alongside the bot
-    app.job_queue.run_repeating(
-        lambda ctx: asyncio.ensure_future(proactive_poller(app)),
-        interval=1,
-        first=2,
-    )
 
     logger.info("KAIA Telegram Bot starting...")
     app.run_polling(drop_pending_updates=True)

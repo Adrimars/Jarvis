@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(docker network *)",
+      "Bash(docker build *)",
+      "Bash(docker run --rm kaia-scraper-test python -c ' *)"
+    ]
+  }
+}
