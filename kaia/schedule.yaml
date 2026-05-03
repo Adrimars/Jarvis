@@ -1,0 +1,36 @@
+tasks:
+  morning_briefing:
+    time: "07:30"
+    days: every_day
+    content: [weather, news_summary, article_of_the_day]
+    catchup: false
+
+  evening_reading:
+    time: "21:00"
+    days: every_day
+    content: [article_recommendations]
+    catchup: false
+
+  weekly_events:
+    time: "09:00"
+    day: monday
+    content: [izmir_events]
+    catchup: false
+
+  clothing_scan:
+    time: "10:00"
+    days: [tuesday, friday]
+    content: [clothing_recommendations]
+    catchup: false
+
+  price_check:
+    time: "12:00"
+    days: every_day
+    content: [price_tracker]
+    catchup: true
+
+  passive_discovery:
+    time: "14:00"
+    days: every_day
+    content: [proactive_discovery]
+    catchup: true
