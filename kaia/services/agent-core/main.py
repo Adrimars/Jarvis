@@ -97,10 +97,20 @@ async def dispatch(user_id: str, text: str) -> str:
 async def _handle_photo(user_id: str, path: str) -> str:
     profile = load_profile()
     photos = profile.setdefault("clothing", {}).setdefault("reference_photos", [])
-    photos.append({"path": path, "embedding": None})
+
+    embedding = None
+    try:
+        from vision.embedder import embed_image_file
+        vec = embed_image_file(path)
+        embedding = vec.tolist()
+    except Exception as e:
+        logger.warning(f"Could not embed photo {path}: {e}")
+
+    photos.append({"path": path, "embedding": embedding})
     save_profile(profile)
     count = len(photos)
-    return f"Reference photo added ({count}/5). {'Ready for Friday scan!' if count >= 5 else 'Send more if you want.'}"
+    embedded_note = "" if embedding else " (görsel analiz yapılamadı, stil bazlı arama kullanılacak)"
+    return f"Referans fotoğraf eklendi ({count}/5).{embedded_note} {'Cuma taraması için hazır!' if count >= 5 else 'Daha fazla gönderebilirsin.'}"
 
 
 async def message_loop():
@@ -130,7 +140,8 @@ async def message_loop():
             response = await dispatch(user_id, text)
             logger.info(f"→ {user_id}: {response[:80]}")
 
-            r.setex(f"response:{request_id}", 120, json.dumps({"text": response}))
+            r.rpush(f"response:{request_id}", json.dumps({"text": response}))
+            r.expire(f"response:{request_id}", 120)
         except Exception as e:
             logger.error(f"Dispatch error: {e}")
 

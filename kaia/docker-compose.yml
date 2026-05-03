@@ -28,10 +28,19 @@ services:
 
   telegram-bot:
     build: ./services/telegram-bot
-    networks: [kaia-external]
+    networks: [kaia-internal, kaia-external]
     restart: always
     env_file: .env
     depends_on: [agent-core]
+
+  scraper:
+    build: ./services/scraper
+    networks: [kaia-internal, kaia-external]
+    restart: always
+    env_file: .env
+    depends_on: [redis]
+    volumes:
+      - kaia-data:/data/kaia
 
   celery-worker:
     build: ./services/agent-core

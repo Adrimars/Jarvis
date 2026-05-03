@@ -1,9 +1,23 @@
+import json
 import logging
+import os
+
+import redis
+
 from core.celery_app import app
 from core.module_loader import load_all_modules
 from core.catchup import record_run
 
 logger = logging.getLogger("tasks")
+
+r = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://redis:6379/0"), decode_responses=True)
+
+
+def _push_telegram(message: str, buttons: list = None):
+    payload = {"text": message}
+    if buttons:
+        payload["buttons"] = buttons
+    r.rpush("queue:telegram:outbox", json.dumps(payload))
 
 
 @app.task(name="tasks.run_module", bind=True, max_retries=2)
@@ -21,8 +35,14 @@ def run_module(self, module_name: str, catchup: bool = False):
     try:
         result = module.run(profile={})
         record_run(module_name, result.success)
+
         if result.message:
-            logger.info(f"{module_name}: {result.message}")
+            logger.info(f"{module_name}: {result.message[:120]}")
+
+        # Push to Telegram for proactive modules (unless module already did it internally)
+        if result.proactive and result.message and module_name not in ("morning_briefing",):
+            _push_telegram(result.message, getattr(result, "buttons", None))
+
         return {"success": result.success, "message": result.message}
     except Exception as exc:
         logger.error(f"{module_name} failed: {exc}")
