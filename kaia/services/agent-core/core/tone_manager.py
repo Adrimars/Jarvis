@@ -1,3 +1,8 @@
+# core/tone_manager.py
+# Stores and retrieves the user's current conversation tone in Redis.
+# Tone is set when the user says things like "be more serious".
+# The active tone instruction is appended to the system prompt on every LLM call.
+
 import os
 import redis
 

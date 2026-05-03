@@ -1,3 +1,8 @@
+# modules/morning_brief.py
+# Runs at 07:30 every day. Reads cached weather and news from Redis,
+# asks the LLM for a short motivational line, and pushes the combined
+# morning summary directly to the Telegram outbox queue.
+
 import logging
 import os
 

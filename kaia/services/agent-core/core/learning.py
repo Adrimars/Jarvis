@@ -1,3 +1,9 @@
+# core/learning.py
+# Tracks what the user likes and dislikes over time.
+# When you tap ❤️ or 👎 on a suggestion, the score for that category nudges up or down.
+# Every Sunday at 04:00 scores are normalized so no single category dominates.
+# Also handles nightly backups of the profile and job state.
+
 import json
 import logging
 import os

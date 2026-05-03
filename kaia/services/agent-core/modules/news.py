@@ -1,3 +1,8 @@
+# modules/news.py
+# Runs every morning at 08:00. Fetches top headlines from NewsAPI filtered by
+# the user's interests, then uses the LLM to summarise them in 3 sentences.
+# Result is cached in Redis and consumed by the morning brief module.
+
 import logging
 import os
 

@@ -1,3 +1,8 @@
+# modules/weather.py
+# Runs every morning at 07:25. Fetches current weather from OpenWeatherMap,
+# then asks the LLM for a 2-sentence outfit suggestion based on conditions
+# and the user's clothing style. Result is cached in Redis for the morning brief.
+
 import logging
 import os
 

@@ -1,3 +1,9 @@
+# modules/price_tracker.py
+# Checks tracked product prices every day at 12:00 and on startup (catchup=True).
+# Products are defined in user_profile.yaml under price_tracker.products with
+# name, link, and target_price. Fetches current price via JSON-LD structured data
+# or heuristic regex, and sends a Telegram alert when the price hits the target.
+
 import json
 import logging
 import os

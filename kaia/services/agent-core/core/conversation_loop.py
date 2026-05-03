@@ -1,3 +1,8 @@
+# core/conversation_loop.py
+# Handles every incoming user message. Detects intent, checks if the user
+# is mid-conversation in a module (e.g. food), manages tone changes,
+# and calls the LLM with conversation history + system prompt.
+
 import os
 import redis as redis_lib
 

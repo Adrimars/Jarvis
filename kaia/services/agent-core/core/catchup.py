@@ -1,3 +1,9 @@
+# core/catchup.py
+# Runs at startup to detect modules that missed their scheduled execution
+# while the computer was off. Re-queues them via Celery so nothing is skipped.
+# Modules listed in NO_CATCHUP are intentionally excluded (e.g. morning news
+# is useless if delivered at 3pm).
+
 import json
 import logging
 import os

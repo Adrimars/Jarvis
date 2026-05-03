@@ -1,3 +1,9 @@
+# core/module_loader.py
+# Auto-discovers and loads all modules from the modules/ folder.
+# Any .py file in modules/ that contains a class inheriting BaseModule
+# is automatically picked up — no manual registration needed.
+# This is how adding a new module is as simple as dropping a file.
+
 import importlib
 import pkgutil
 import logging

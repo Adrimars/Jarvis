@@ -1,3 +1,7 @@
+# core/intent.py
+# Classifies a user message into one of 10 intent categories using the LLM.
+# Used by conversation_loop.py to decide whether to trigger a module or just chat.
+
 from llm.client import ask_llm
 
 INTENT_PROMPT = """Analyze the user message. Which category does it belong to?

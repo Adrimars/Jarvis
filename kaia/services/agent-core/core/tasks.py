@@ -1,3 +1,9 @@
+# core/tasks.py
+# Celery task definitions. run_module() is called by the Beat scheduler for
+# every timed module (weather, news, clothing…). run_backup() and
+# run_normalize() handle nightly maintenance. Proactive results are
+# automatically pushed to the Telegram outbox queue.
+
 import json
 import logging
 import os

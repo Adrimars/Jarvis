@@ -1,3 +1,9 @@
+# services/scraper/main.py
+# The scraper service entry point. Listens on queue:scraper:inbox in Redis for
+# scrape jobs dispatched by modules (clothing, events). Runs Playwright to visit
+# pages, extracts product/event data, and writes results back to Redis for the
+# requesting module to pick up. Runs in its own Docker container with Playwright.
+
 import asyncio
 import json
 import logging

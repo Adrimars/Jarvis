@@ -1,3 +1,9 @@
+# memory/conversation.py
+# Stores per-user conversation history in Redis as a JSON list.
+# The last 20 messages are passed to the LLM on every call so it remembers context.
+# Older messages beyond the window are summarised to save tokens.
+# History expires after 3 days of inactivity.
+
 import json
 import os
 import redis

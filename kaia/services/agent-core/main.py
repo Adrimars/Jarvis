@@ -1,3 +1,9 @@
+# main.py
+# The brain's entry point. Listens on a Redis queue for incoming messages from
+# the Telegram bot, routes special commands (__start__, __yaml__, __photo__…),
+# and forwards normal conversation to the conversation loop.
+# Also runs the catch-up service on startup to replay missed scheduled tasks.
+
 import asyncio
 import json
 import logging

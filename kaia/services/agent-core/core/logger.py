@@ -1,3 +1,8 @@
+# core/logger.py
+# Adds a rotating file handler to the root logger for each service.
+# Log files live at /data/kaia/logs/<service>.log and are kept for 30 days.
+# Called once at startup in main.py, celery_app.py, and scraper/main.py.
+
 import logging
 import os
 from logging.handlers import TimedRotatingFileHandler

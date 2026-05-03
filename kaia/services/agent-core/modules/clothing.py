@@ -1,3 +1,10 @@
+# modules/clothing.py
+# Runs every Tuesday and Friday at 10:00. Sends a scrape job to the scraper
+# service via Redis, waits for product results, then scores each item using
+# CLIP visual similarity against your reference photos (or LLM style-matching
+# as fallback). Top 8 matches are sent to Telegram with ❤️/👎 feedback buttons.
+# Feedback updates per-site scores via the learning engine.
+
 import json
 import logging
 import os

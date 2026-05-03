@@ -1,3 +1,9 @@
+# core/config.py
+# Loads kaia.config.yaml (mounted at /data/kaia/kaia.config.yaml in Docker).
+# Everything you want to change without touching code lives there:
+# schedules, character name/personality, module toggles, thresholds.
+# Use get("section.key") for dot-notation access.
+
 import os
 from pathlib import Path
 import yaml

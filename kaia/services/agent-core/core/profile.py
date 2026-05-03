@@ -1,3 +1,9 @@
+# core/profile.py
+# Manages the user's YAML profile stored at /data/kaia/user_profile.yaml.
+# The profile holds everything personal: location, clothing style, budget,
+# food preferences, interests, tracked products, and module toggles.
+# Edit it directly or send a new YAML file to the Telegram bot.
+
 import os
 import yaml
 from pathlib import Path

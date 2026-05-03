@@ -1,3 +1,9 @@
+# modules/base.py
+# Abstract base class every module must inherit from.
+# Defines the common interface: name, schedule, catchup flag, run(), and hooks.
+# ModuleResult is the standard return type — success flag, items list, message,
+# and whether the result should be sent proactively to Telegram.
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 

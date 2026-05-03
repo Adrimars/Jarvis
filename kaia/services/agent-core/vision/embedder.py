@@ -1,3 +1,9 @@
+# vision/embedder.py
+# Wraps the CLIP clip-ViT-B-32 model (via sentence-transformers) for visual search.
+# Converts clothing photos into 512-dimension vectors. Cosine similarity between
+# a scraped product image and your reference photos determines how well it matches
+# your style. Model is loaded lazily on first use (~600 MB, cached after that).
+
 import logging
 from functools import lru_cache
 from pathlib import Path

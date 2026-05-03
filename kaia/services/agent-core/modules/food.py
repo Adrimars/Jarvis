@@ -1,3 +1,10 @@
+# modules/food.py
+# On-demand module (disabled by default, enable with /module food on).
+# Handles multi-turn recipe conversations: extracts ingredients from chat,
+# suggests 3 recipes personalised to the user's favorites/dislikes/dietary needs,
+# and refines based on follow-up messages ("hafif olsun", "başka öner").
+# Every like/dislike nudges the per-recipe preference scores in the profile.
+
 import json
 import logging
 import os

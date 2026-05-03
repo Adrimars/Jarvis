@@ -1,3 +1,9 @@
+# modules/events.py
+# Runs every Monday at 08:30. Scrapes event listing sites (Biletix, Passo)
+# via the scraper service, scores each event against the user's interest
+# categories using the LLM, and sends the top picks to Telegram.
+# Add more event sources to DEFAULT_EVENT_SOURCES or via /addsite.
+
 import json
 import logging
 import os
