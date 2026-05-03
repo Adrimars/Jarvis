@@ -1,0 +1,59 @@
+networks:
+  kaia-internal:
+    internal: true
+  kaia-external:
+    internal: false
+
+services:
+  redis:
+    image: redis:7-alpine
+    networks: [kaia-internal]
+    restart: always
+    volumes: [redis-data:/data]
+
+  ollama:
+    image: ollama/ollama
+    networks: [kaia-internal]
+    restart: always
+    volumes: [ollama-data:/root/.ollama]
+
+  agent-core:
+    build: ./services/agent-core
+    networks: [kaia-internal, kaia-external]
+    restart: always
+    env_file: .env
+    depends_on: [redis, ollama]
+    volumes:
+      - kaia-data:/data/kaia
+
+  telegram-bot:
+    build: ./services/telegram-bot
+    networks: [kaia-external]
+    restart: always
+    env_file: .env
+    depends_on: [agent-core]
+
+  celery-worker:
+    build: ./services/agent-core
+    command: celery -A core.celery_app worker --loglevel=info --concurrency=2
+    networks: [kaia-internal, kaia-external]
+    restart: always
+    env_file: .env
+    depends_on: [redis, ollama]
+    volumes:
+      - kaia-data:/data/kaia
+
+  celery-beat:
+    build: ./services/agent-core
+    command: celery -A core.celery_app beat --loglevel=info
+    networks: [kaia-internal]
+    restart: always
+    env_file: .env
+    depends_on: [redis]
+    volumes:
+      - kaia-data:/data/kaia
+
+volumes:
+  redis-data:
+  ollama-data:
+  kaia-data:
