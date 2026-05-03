@@ -48,3 +48,25 @@ def run_module(self, module_name: str, catchup: bool = False):
         logger.error(f"{module_name} failed: {exc}")
         record_run(module_name, False)
         raise self.retry(exc=exc, countdown=60)
+
+
+@app.task(name="tasks.run_backup")
+def run_backup():
+    from core.learning import LearningEngine
+    from core.profile import load_profile
+    try:
+        LearningEngine()._backup(load_profile())
+        logger.info("Nightly backup complete")
+    except Exception as e:
+        logger.error(f"Backup failed: {e}")
+
+
+@app.task(name="tasks.run_normalize")
+def run_normalize():
+    from core.learning import LearningEngine
+    from core.profile import load_profile
+    try:
+        LearningEngine().weekly_normalize(load_profile())
+        logger.info("Weekly interest normalization complete")
+    except Exception as e:
+        logger.error(f"Normalization failed: {e}")

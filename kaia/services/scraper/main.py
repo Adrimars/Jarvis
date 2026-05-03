@@ -10,6 +10,15 @@ from scraper.registry import get_all_search_sites, get_scraper
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [scraper] %(message)s")
 logger = logging.getLogger("scraper")
 
+# File logging — 30-day rotation
+from pathlib import Path
+from logging.handlers import TimedRotatingFileHandler
+_log_dir = Path(os.getenv("KAIA_DATA_DIR", "/data/kaia")) / "logs"
+_log_dir.mkdir(parents=True, exist_ok=True)
+_fh = TimedRotatingFileHandler(_log_dir / "scraper.log", when="midnight", backupCount=30, encoding="utf-8")
+_fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] [%(name)s] %(message)s"))
+logging.getLogger().addHandler(_fh)
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 

@@ -17,6 +17,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agent-core")
 
+from core.logger import setup_file_logging
+setup_file_logging("agent-core")
+
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 r = redis.Redis.from_url(REDIS_URL, decode_responses=True)
 

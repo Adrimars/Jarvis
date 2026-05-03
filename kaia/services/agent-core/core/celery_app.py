@@ -1,6 +1,14 @@
+import logging
 import os
 from celery import Celery
 from celery.schedules import crontab
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [celery] %(message)s",
+)
+from core.logger import setup_file_logging
+setup_file_logging("celery-worker")
 
 app = Celery(
     "kaia",
@@ -55,6 +63,14 @@ app.conf.update(
             "task": "tasks.run_module",
             "schedule": crontab(hour=8, minute=0),
             "args": ["news"],
+        },
+        "nightly-backup": {
+            "task": "tasks.run_backup",
+            "schedule": crontab(hour=3, minute=0),
+        },
+        "weekly-normalize": {
+            "task": "tasks.run_normalize",
+            "schedule": crontab(hour=4, minute=0, day_of_week="sunday"),
         },
     },
 )

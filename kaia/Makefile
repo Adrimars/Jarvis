@@ -15,3 +15,11 @@ logs:
 
 health:
 	docker compose ps
+
+update:
+	git pull
+	docker compose build
+	docker compose up -d
+
+backup:
+	docker compose exec agent-core python -c "from core.learning import LearningEngine; from core.profile import load_profile; LearningEngine()._backup(load_profile()); print('Backup done.')"
